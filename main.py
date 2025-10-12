@@ -2,6 +2,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
 import re
 from datetime import datetime
+import helper_functions
 
 quotes = [
     {"id": 1, "text": "Be the change you wish to see in the world", "author": "Gandhi"},
@@ -53,17 +54,12 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
                 filtered_quotes = []
                 for key, value in matches:
                     if key == "author":
-                        if len(filtered_quotes):
-                            filtered_quotes = [quote for quote in filtered_quotes if value.lower() == quote['author'].lower() and "Deleted" not in quote]
-                        else:
-                            filtered_quotes = [quote for quote in quotes if quote['author'].lower() == value.lower() and "Deleted" not in quote]
+                        base_list = helper_functions.get_base_list(filtered_quotes, quotes)
+                        filtered_quotes = [quote for quote in base_list if quote['author'].lower().replace(" ","%20") == value.lower() and "Deleted" not in quote]
                         print(filtered_quotes)
 
                     elif key == "search":
-                        if len(filtered_quotes):
-                            filtered_quotes = [quote for quote in filtered_quotes if value.lower() in quote['text'].lower() and "Deleted" not in quote]
-                            print(filtered_quotes)
-                        else:
+                        
                             filtered_quotes = [quote for quote in quotes if value.lower() in quote['text'].lower() and "Deleted" not in quote]
                             print(filtered_quotes)
                             
@@ -247,6 +243,7 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
     def add_timestamp(self):
         current_datetime = datetime.now()
         return current_datetime.strftime("%d-%m-%Y %H:%M:%S")
+    
         
 
 
