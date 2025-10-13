@@ -1,10 +1,5 @@
-# Python-generated files
+# ignore all pycache folders
 __pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
 
-# Virtual environments
-.venv
+# ignore all the gitgnore and venv files 
+.venv/
