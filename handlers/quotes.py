@@ -3,43 +3,16 @@ import json
 import re
 from datetime import datetime
 from database.storage import quotes
+from utils.helpers import Helpers
 
-class SimpleRequestHandler(BaseHTTPRequestHandler):
+class SimpleRequestHandler(BaseHTTPRequestHandler, Helpers):
     def do_GET(self):
         if self.path == "/" or self.path == "/home":
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html")
-            self.end_headers()
-            message = """
-    <html>
-
-       <head>
-
-           <title>Python HTTP Server</title>
-
-       </head>
-
-       <body>
-
-           <h1>Simple HTTP Server</h1>
-
-           <p>Congratulations! The HTTP Server is working!
-
-    Welcome to GeeksForGeeks</p>
-
-       </body>
-
-    </html>
-
-"""
-            self.wfile.write(message.encode())
+            self.send_server_response(200, "welcome to the server", "text/plain")
 
         elif self.path == "/about":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            message = {"message" : "This is about us"}
-            self.wfile.write(json.dumps(message).encode())
+            message = json.dumps({"message" : "This is about us"})
+            self.send_server_response(200, message.encode(), "application/json")
 
         elif self.path.startswith("/quotes"):
             # Handling query strings
@@ -77,28 +50,14 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
                             continue
                     
                 filtered_quotes_json = json.dumps(filtered_quotes)
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(filtered_quotes_json)))
-                self.end_headers()
-                self.wfile.write(filtered_quotes_json.encode())
-                return
+                self.send_server_response(200, filtered_quotes_json.encode(), "application/json")
             else:
                 quotes_json = json.dumps([quote for quote in quotes if "Deleted" not in quote])
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(quotes_json)))
-                self.end_headers()
-                self.wfile.write(quotes_json.encode())
-                return
+                self.send_server_response(200, quotes_json.encode(), "application/json")
 
         else:
-            self.send_response(404)
             message = "Invalid request"
-            self.send_header("Content-Type", "text/plain")
-            self.send_header("Content-Length", str(len(message)))
-            self.end_headers()
-            self.wfile.write(message.encode())
+            self.send_server_response(400, message.encode(), "text/plain")
 
     
     def do_POST(self):
@@ -112,13 +71,6 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
                 json_input = raw_input.decode()
                 dict_input = json.loads(json_input)
                 
-
-                if not "text" in dict_input:
-                    raise Exception("No text option specified!")
-
-                if not "author" in dict_input:
-                    raise Exception("No author option specified!")
-
                 if not dict_input['text'] or not dict_input['author']:
                     raise Exception("Text/author values cant be empty")
 
@@ -135,20 +87,12 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
                 quotes.append(dict_input)
 
                 message_output = json.dumps({"status" : "success", "message" : "created"})
-                self.send_response(201)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(message_output)))
-                self.end_headers()
-                self.wfile.write(message_output.encode())
+                self.send_server_response(201, message_output.encode(), "application/json")
 
             except Exception as e:
-                self.send_response(400)
                 message_output = json.dumps({"status" : "error", "message" : str(e)})
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(message_output)))
-                self.end_headers()
-                self.wfile.write(message_output.encode())
-
+                self.send_server_response(400, message_output.encode(), "application/json")
+                
     def do_PUT(self):
         if self.path.startswith("/quotes"):
             try:
@@ -195,22 +139,13 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
 
 
                         message_output = json.dumps(quote)
-                        self.send_response(200)
-                        self.send_header("Content-Type", "application/json")
-                        self.send_header("Content-Length", str(len(message_output)))
-                        self.end_headers()
-                        self.wfile.write(message_output.encode())
-                        return()
+                        self.send_server_response(200, message_output.encode(), "application/json")
                 
                 raise Exception("Specified quote doesnt exists")
 
             except Exception as e:
-                self.send_response(400)
                 message_output = json.dumps({"status" : "error", "message" : str(e)})
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(message_output)))
-                self.end_headers()
-                self.wfile.write(message_output.encode())
+                self.send_server_response(400, message_output.encode(), "application/json")
 
             
     def do_DELETE(self):
@@ -226,19 +161,14 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
                     if quote['id'] == int(target_id):
                         quote["Deleted"] = "True"
                         quote["deleted_at"] = self.add_timestamp()
-                        self.send_response(204)
-                        self.end_headers()
-                        return()
+                        self.send_server_response(201)
+                        return
                 
                 raise Exception("Specified quote doesnt exists")
 
             except Exception as e:
-                self.send_response(400)
                 message_output = json.dumps({"status" : "error", "message" : str(e)})
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(message_output)))
-                self.end_headers()
-                self.wfile.write(message_output.encode())
+                self.send_server_response(400, message_output.encode(), "application/json")
     
     def add_timestamp(self):
         current_datetime = datetime.now()

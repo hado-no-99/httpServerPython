@@ -1,5 +1,5 @@
 class Helpers:
-    def send_server_response(self, code, message=None, type=None):
+    def send_server_response(self, code, message="", type=""):
         self.send_response(code)
         if message:
             self.send_header("Content-Type", type)
