@@ -8,11 +8,12 @@ from utils.helpers import Helpers
 class SimpleRequestHandler(BaseHTTPRequestHandler, Helpers):
     def do_GET(self):
         if self.path == "/" or self.path == "/home":
-            self.send_server_response(200, "welcome to the server", "text/plain")
+            message = "Welcome to the Quotes Server"
+            self.send_server_response(200, message, "text/plain")
 
         elif self.path == "/about":
             message = json.dumps({"message" : "This is about us"})
-            self.send_server_response(200, message.encode(), "application/json")
+            self.send_server_response(200, message, "application/json")
 
         elif self.path.startswith("/quotes"):
             # Handling query strings
@@ -50,14 +51,17 @@ class SimpleRequestHandler(BaseHTTPRequestHandler, Helpers):
                             continue
                     
                 filtered_quotes_json = json.dumps(filtered_quotes)
-                self.send_server_response(200, filtered_quotes_json.encode(), "application/json")
+                self.send_server_response(200, filtered_quotes_json, "application/json")
+                return
+
             else:
                 quotes_json = json.dumps([quote for quote in quotes if "Deleted" not in quote])
-                self.send_server_response(200, quotes_json.encode(), "application/json")
+                self.send_server_response(200, quotes_json, "application/json")
+                return
 
         else:
             message = "Invalid request"
-            self.send_server_response(400, message.encode(), "text/plain")
+            self.send_server_response(400, message, "text/plain")
 
     
     def do_POST(self):
@@ -87,12 +91,12 @@ class SimpleRequestHandler(BaseHTTPRequestHandler, Helpers):
                 quotes.append(dict_input)
 
                 message_output = json.dumps({"status" : "success", "message" : "created"})
-                self.send_server_response(201, message_output.encode(), "application/json")
+                self.send_server_response(201, message_output, "application/json")
 
             except Exception as e:
                 message_output = json.dumps({"status" : "error", "message" : str(e)})
-                self.send_server_response(400, message_output.encode(), "application/json")
-                
+                self.send_server_response(400, message_output, "application/json")
+
     def do_PUT(self):
         if self.path.startswith("/quotes"):
             try:

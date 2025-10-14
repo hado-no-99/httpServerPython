@@ -8,3 +8,9 @@ class Helpers:
             self.wfile.write(message.encode())
             return 
         self.end_headers()
+
+    def get_base_list(self, filtered_quotes, quotes):
+        if len(filtered_quotes):
+            return filtered_quotes
+        return quotes
+        
