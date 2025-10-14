@@ -3,43 +3,17 @@ import json
 import re
 from datetime import datetime
 from database.storage import quotes
+from utils.helpers import Helpers
 
-class SimpleRequestHandler(BaseHTTPRequestHandler):
+class SimpleRequestHandler(BaseHTTPRequestHandler, Helpers):
     def do_GET(self):
         if self.path == "/" or self.path == "/home":
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html")
-            self.end_headers()
-            message = """
-    <html>
-
-       <head>
-
-           <title>Python HTTP Server</title>
-
-       </head>
-
-       <body>
-
-           <h1>Simple HTTP Server</h1>
-
-           <p>Congratulations! The HTTP Server is working!
-
-    Welcome to GeeksForGeeks</p>
-
-       </body>
-
-    </html>
-
-"""
-            self.wfile.write(message.encode())
+            message = "Welcome to the Quotes Server"
+            self.send_server_response(200, message, "text/plain")
 
         elif self.path == "/about":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            message = {"message" : "This is about us"}
-            self.wfile.write(json.dumps(message).encode())
+            message = json.dumps({"message" : "This is about us"})
+            self.send_server_response(200, message, "application/json")
 
         elif self.path.startswith("/quotes"):
             # Handling query strings
@@ -77,28 +51,17 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
                             continue
                     
                 filtered_quotes_json = json.dumps(filtered_quotes)
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(filtered_quotes_json)))
-                self.end_headers()
-                self.wfile.write(filtered_quotes_json.encode())
+                self.send_server_response(200, filtered_quotes_json, "application/json")
                 return
+
             else:
                 quotes_json = json.dumps([quote for quote in quotes if "Deleted" not in quote])
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(quotes_json)))
-                self.end_headers()
-                self.wfile.write(quotes_json.encode())
+                self.send_server_response(200, quotes_json, "application/json")
                 return
 
         else:
-            self.send_response(404)
             message = "Invalid request"
-            self.send_header("Content-Type", "text/plain")
-            self.send_header("Content-Length", str(len(message)))
-            self.end_headers()
-            self.wfile.write(message.encode())
+            self.send_server_response(400, message, "text/plain")
 
     
     def do_POST(self):
@@ -135,19 +98,11 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
                 quotes.append(dict_input)
 
                 message_output = json.dumps({"status" : "success", "message" : "created"})
-                self.send_response(201)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(message_output)))
-                self.end_headers()
-                self.wfile.write(message_output.encode())
+                self.send_server_response(201, message_output, "application/json")
 
             except Exception as e:
-                self.send_response(400)
                 message_output = json.dumps({"status" : "error", "message" : str(e)})
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(message_output)))
-                self.end_headers()
-                self.wfile.write(message_output.encode())
+                self.send_server_response(400, message_output, "application/json")
 
     def do_PUT(self):
         if self.path.startswith("/quotes"):
