@@ -7,7 +7,7 @@ import json
 class Quote:
     def get_quotes(self):
         # Handling query strings
-        query_start = re.search(r"?(author|search|limit)", self.path)
+        query_start = re.search(r"\?(author|search|limit)", self.path)
         matches = re.findall(r"(author|search|limit)=([^&]+)", self.path)
         print(matches)
         if query_start and len(matches):
@@ -41,4 +41,66 @@ class Quote:
         else:
             message = "Invalid request"
             self.send_server_response(400, message, "text/plain")
+
+
+    def post_quotes(self):
+        try:
+            dict_input = self.validate_user_input()
+
+            # adding id to quote
+            id = quotes[-1].get('id', 0)
+            dict_input['id'] = id + 1
+
+            # adding created_at timestamp when a quote is created
+            dict_input["created_at"] = self.add_timestamp()
+                    
+            quotes.append(dict_input)
+
+            message_output = json.dumps({"status" : "success", "message" : "created"})
+            self.send_server_response(201, message_output, "application/json")
+
+        except Exception as e:
+            message_output = json.dumps({"status" : "error", "message" : str(e)})
+            self.send_server_response(400, message_output, "application/json")
+
+
+    def put_quotes(self):
+        try:
+            dict_input = self.validate_user_input(method="PUT")
+
+            target_id_search = re.search(r"/quotes/(\d+)", self.path)
+            print(self.path, target_id_search)
+            if not target_id_search:
+                raise Exception("Invalid quote id")
+
+            target_id = target_id_search.group(1)
+
+            for quote in quotes:
+                if quote['id'] == int(target_id):
+                    print("inside condition")
+                    print(dict_input)
+                    if "text" in dict_input and "author" in dict_input:
+                        print("matched author and text conditions")
+                        quote['text'] = dict_input['text']
+                        quote['author'] = dict_input['author']
+                    elif "text" in dict_input:
+                        print("Matched the text condition")
+                        quote["text"] = dict_input["text"]
+                    elif "author" in dict_input:
+                        print("Matched the author condition")
+                        quote["author"] = dict_input["author"]
+
+                        
+                    # adding/modifying the modified_at timestamp
+                    quote['modified_at'] = self.add_timestamp()
+
+
+                    message_output = json.dumps(quote)
+                    self.send_server_response(200, message_output, "application/json")
+            
+            raise Exception("Specified quote doesnt exists")
+
+        except Exception as e:
+            message_output = json.dumps({"status" : "error", "message" : str(e)})
+            self.send_server_response(400, message_output, "application/json")
 
