@@ -4,8 +4,9 @@ import re
 from datetime import datetime
 from database.storage import quotes
 from utils.helpers import Helpers
+from models.quote_methods import Quote
 
-class SimpleRequestHandler(BaseHTTPRequestHandler, Helpers):
+class SimpleRequestHandler(BaseHTTPRequestHandler, Quote, Helpers):
     def do_GET(self):
         if self.path == "/" or self.path == "/home":
             message = "Welcome to the Quotes Server"
@@ -17,51 +18,7 @@ class SimpleRequestHandler(BaseHTTPRequestHandler, Helpers):
 
         elif self.path.startswith("/quotes"):
             # Handling query strings
-            matches = re.findall(r"(author|search|limit)=([^&]+)", self.path)
-            print(matches)
-            if len(matches):
-                filtered_quotes = []
-                for key, value in matches:
-                    if key == "author":
-                        if len(filtered_quotes):
-                            filtered_quotes = [quote for quote in filtered_quotes if value.lower() == quote['author'].lower() and "Deleted" not in quote]
-                        else:
-                            filtered_quotes = [quote for quote in quotes if quote['author'].lower() == value.lower() and "Deleted" not in quote]
-                        print(filtered_quotes)
-
-                    elif key == "search":
-                        if len(filtered_quotes):
-                            filtered_quotes = [quote for quote in filtered_quotes if value.lower() in quote['text'].lower() and "Deleted" not in quote]
-                            print(filtered_quotes)
-                        else:
-                            filtered_quotes = [quote for quote in quotes if value.lower() in quote['text'].lower() and "Deleted" not in quote]
-                            print(filtered_quotes)
-                            
-                    elif key == "limit":
-                        try:
-                            if len(filtered_quotes):
-                                filtered_quotes = filtered_quotes[:int(value)]
-                                filtered_quotes
-                                print(filtered_quotes)
-                            else:
-                                filtered_quotes = quotes[:int(value)]
-                                print(filtered_quotes)
-
-                        except Exception:
-                            continue
-                    
-                filtered_quotes_json = json.dumps(filtered_quotes)
-                self.send_server_response(200, filtered_quotes_json, "application/json")
-                return
-
-            else:
-                quotes_json = json.dumps([quote for quote in quotes if "Deleted" not in quote])
-                self.send_server_response(200, quotes_json, "application/json")
-                return
-
-        else:
-            message = "Invalid request"
-            self.send_server_response(400, message, "text/plain")
+            self.get_quotes()
 
     
     def do_POST(self):
@@ -75,13 +32,6 @@ class SimpleRequestHandler(BaseHTTPRequestHandler, Helpers):
                 json_input = raw_input.decode()
                 dict_input = json.loads(json_input)
                 
-
-                if not "text" in dict_input:
-                    raise Exception("No text option specified!")
-
-                if not "author" in dict_input:
-                    raise Exception("No author option specified!")
-
                 if not dict_input['text'] or not dict_input['author']:
                     raise Exception("Text/author values cant be empty")
 
@@ -150,22 +100,13 @@ class SimpleRequestHandler(BaseHTTPRequestHandler, Helpers):
 
 
                         message_output = json.dumps(quote)
-                        self.send_response(200)
-                        self.send_header("Content-Type", "application/json")
-                        self.send_header("Content-Length", str(len(message_output)))
-                        self.end_headers()
-                        self.wfile.write(message_output.encode())
-                        return()
+                        self.send_server_response(200, message_output.encode(), "application/json")
                 
                 raise Exception("Specified quote doesnt exists")
 
             except Exception as e:
-                self.send_response(400)
                 message_output = json.dumps({"status" : "error", "message" : str(e)})
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(message_output)))
-                self.end_headers()
-                self.wfile.write(message_output.encode())
+                self.send_server_response(400, message_output.encode(), "application/json")
 
             
     def do_DELETE(self):
@@ -181,19 +122,14 @@ class SimpleRequestHandler(BaseHTTPRequestHandler, Helpers):
                     if quote['id'] == int(target_id):
                         quote["Deleted"] = "True"
                         quote["deleted_at"] = self.add_timestamp()
-                        self.send_response(204)
-                        self.end_headers()
-                        return()
+                        self.send_server_response(201)
+                        return
                 
                 raise Exception("Specified quote doesnt exists")
 
             except Exception as e:
-                self.send_response(400)
                 message_output = json.dumps({"status" : "error", "message" : str(e)})
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(message_output)))
-                self.end_headers()
-                self.wfile.write(message_output.encode())
+                self.send_server_response(400, message_output.encode(), "application/json")
     
     def add_timestamp(self):
         current_datetime = datetime.now()
