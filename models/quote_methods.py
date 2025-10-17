@@ -14,13 +14,14 @@ class Quote:
             filtered_quotes = []
             for key, value in matches:
                 base_list = self.get_base_list(filtered_quotes, quotes)
+                print(base_list)
 
                 if key == "author":
-                    filtered_quotes = [quote for quote in base_list if quote['author'].lower() == value.lower().replace("+", "") and "Deleted" not in quote]
+                    filtered_quotes = [quote for quote in base_list if quote['author'].lower() == value.lower().replace("+", " ") and "Deleted" not in quote]
                     print(filtered_quotes)
 
                 elif key == "search":
-                    filtered_quotes = [quote for quote in base_list if value.lower().replace("+", "") in quote['text'].lower() and "Deleted" not in quote]
+                    filtered_quotes = [quote for quote in base_list if value.lower().replace("+", " ") in quote['text'].lower() and "Deleted" not in quote]
                     print(filtered_quotes)
                         
                 elif key == "limit":
@@ -30,12 +31,13 @@ class Quote:
 
                     except Exception:
                         continue
-                
+            
+            print(filtered_quotes)
             self.send_server_response(200, json.dumps(filtered_quotes), "application/json")
             return
         
         elif self.path == "/quotes":
-            filtered_quotes = [quote for quote in quotes if "Deleted" not in quotes]
+            filtered_quotes = [quote for quote in quotes if "Deleted" not in quote]
             self.send_server_response(200, json.dumps(filtered_quotes), "application/json")
 
         else:
@@ -67,13 +69,7 @@ class Quote:
     def put_quotes(self):
         try:
             dict_input = self.validate_user_input(method="PUT")
-
-            target_id_search = re.search(r"/quotes/(\d+)", self.path)
-            print(self.path, target_id_search)
-            if not target_id_search:
-                raise Exception("Invalid quote id")
-
-            target_id = target_id_search.group(1)
+            target_id = self.fetch_quote_id()
 
             for quote in quotes:
                 if quote['id'] == int(target_id):
@@ -104,3 +100,20 @@ class Quote:
             message_output = json.dumps({"status" : "error", "message" : str(e)})
             self.send_server_response(400, message_output, "application/json")
 
+
+    def delete_quotes(self):
+        try:
+            target_id = self.fetch_quote_id()
+
+            for quote in quotes:
+                if quote['id'] == int(target_id):
+                    quote["Deleted"] = "True"
+                    quote["deleted_at"] = self.add_timestamp()
+                    self.send_server_response(201)
+                    return
+            
+            raise Exception("Specified quote doesnt exists")
+
+        except Exception as e:
+            message_output = json.dumps({"status" : "error", "message" : str(e)})
+            self.send_server_response(400, message_output, "application/json")

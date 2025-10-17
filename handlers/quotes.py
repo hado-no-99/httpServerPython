@@ -32,24 +32,5 @@ class SimpleRequestHandler(BaseHTTPRequestHandler, Quote, Helpers):
             
     def do_DELETE(self):
         if self.path.startswith("/quotes"):
-            try:
-                target_id_search = re.search(r"/quotes/(\d+)", self.path)
-                if not target_id_search:
-                    raise Exception("Invalid quote id")
-
-                target_id = target_id_search.group(1)
-
-                for quote in quotes:
-                    if quote['id'] == int(target_id):
-                        quote["Deleted"] = "True"
-                        quote["deleted_at"] = self.add_timestamp()
-                        self.send_server_response(201)
-                        return
-                
-                raise Exception("Specified quote doesnt exists")
-
-            except Exception as e:
-                message_output = json.dumps({"status" : "error", "message" : str(e)})
-                self.send_server_response(400, message_output.encode(), "application/json")
-    
+            self.delete_quotes()
     

@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+import re
 
 class Helpers:
     def send_server_response(self, code, message="", type=""):
@@ -38,7 +39,7 @@ class Helpers:
 
         elif method == "POST":
             if not dict_input['text'] or not dict_input['author']:
-                    raise Exception("Text/author values cant be empty")
+                raise Exception("Text/author values cant be empty")
 
             if len(dict_input['text']) > 500 or len(dict_input['author']) > 500:
                 raise Exception("Text/author values cant exceed limit of 500 characters")
@@ -48,6 +49,18 @@ class Helpers:
         else:
             raise Exception("Invalid method specified")
 
+
     def add_timestamp(self):
         current_datetime = datetime.now()
         return current_datetime.strftime("%d-%m-%Y %H:%M:%S")
+
+
+    def fetch_quote_id(self):
+        target_id_search = re.search(r"/quotes/(\d+)", self.path)
+        print(self.path, target_id_search)
+        if not target_id_search:
+            raise Exception("Invalid quote id")
+
+        target_id = target_id_search.group(1)
+
+        return target_id
